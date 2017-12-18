@@ -6,7 +6,7 @@ package io.github.bleoo.bugcatcher;
 
 public class BugTrigger {
 
-    interface onTriggerListener {
+    public interface onTriggerListener {
         String onActivated();
     }
 

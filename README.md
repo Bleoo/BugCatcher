@@ -12,7 +12,7 @@ allprojects {
 }
 
 dependencies {
-    compile 'com.github.Bleoo:BugCatcher:1.0.1'
+    compile 'com.github.Bleoo:BugCatcher:1.0.4'
 }
 ```
 
