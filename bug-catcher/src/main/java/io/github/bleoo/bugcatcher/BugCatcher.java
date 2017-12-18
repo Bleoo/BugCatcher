@@ -1,7 +1,6 @@
 package io.github.bleoo.bugcatcher;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import okhttp3.ResponseBody;
@@ -51,17 +50,17 @@ public class BugCatcher {
         private String basUrl;
         private boolean debug;
 
-        Config context(Context context) {
+        public Config context(Context context) {
             this.context = context;
             return this;
         }
 
-        Config baseUrl(String url) {
+        public Config baseUrl(String url) {
             basUrl = url;
             return this;
         }
 
-        Config debug(boolean enable) {
+        public Config debug(boolean enable) {
             debug = enable;
             return this;
         }
@@ -84,11 +83,14 @@ public class BugCatcher {
      *
      * @param bugTrigger
      */
-    public static void activate(@NonNull BugTrigger bugTrigger) {
+    public static void activate(BugTrigger bugTrigger) {
+        if (bugTrigger == null) {
+            return;
+        }
         if (sConfig == null) {
             Loger.e("Config is null , are you init ?");
         }
-        if (sConfig.isDebug()) {
+        if (!sConfig.isDebug()) {
             return;
         }
 

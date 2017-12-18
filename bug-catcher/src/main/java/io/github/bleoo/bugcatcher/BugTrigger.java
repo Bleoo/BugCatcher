@@ -1,7 +1,5 @@
 package io.github.bleoo.bugcatcher;
 
-import android.support.annotation.NonNull;
-
 /**
  * Created by bleoo on 2017/12/12.
  */
@@ -15,7 +13,7 @@ public class BugTrigger {
     private Bug bug;
     private onTriggerListener listener;
 
-    public BugTrigger(String bugId, @NonNull onTriggerListener listener) {
+    public BugTrigger(String bugId, onTriggerListener listener) {
         bug = new Bug();
         bug.id = bugId;
         bug.device = Utils.getDeviceInfo();
@@ -30,7 +28,7 @@ public class BugTrigger {
         return listener;
     }
 
-    public void setListener(@NonNull onTriggerListener listener) {
+    public void setListener(onTriggerListener listener) {
         this.listener = listener;
     }
 
