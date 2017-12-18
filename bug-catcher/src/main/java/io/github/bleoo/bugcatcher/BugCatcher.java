@@ -2,7 +2,7 @@ package io.github.bleoo.bugcatcher;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
-import android.util.Log;
+import android.text.TextUtils;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -17,23 +17,65 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class BugCatcher {
 
-    private static Retrofit retrofit;
-    private static BugService service;
+    private static Retrofit sRetrofit;
+    private static BugService sService;
+    private static Config sConfig;
 
-    public static void init(Context context) {
-
+    public static void init(Config config) {
+        sConfig = config;
+        Utils.init(sConfig.context);
+        Utils.getDeviceInfo();
     }
 
     private static void getService() {
-        if (retrofit == null) {
-            retrofit = new Retrofit.Builder()
-                    .baseUrl("http://10.0.1.89:3000")
+        if (TextUtils.isEmpty(sConfig.getBaseUrl())) {
+            Loger.e("BaseUrl of Config is null!");
+            return;
+        }
+
+        if (sRetrofit == null) {
+            sRetrofit = new Retrofit.Builder()
+                    .baseUrl(sConfig.basUrl)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
         }
 
-        if (service == null) {
-            service = retrofit.create(BugService.class);
+        if (sService == null) {
+            sService = sRetrofit.create(BugService.class);
+        }
+    }
+
+    public static class Config {
+
+        private Context context;
+        private String basUrl;
+        private boolean debug;
+
+        Config context(Context context) {
+            this.context = context;
+            return this;
+        }
+
+        Config baseUrl(String url) {
+            basUrl = url;
+            return this;
+        }
+
+        Config debug(boolean enable) {
+            debug = enable;
+            return this;
+        }
+
+        public Context getContext() {
+            return context;
+        }
+
+        public String getBaseUrl() {
+            return basUrl;
+        }
+
+        public boolean isDebug() {
+            return debug;
         }
     }
 
@@ -43,13 +85,20 @@ public class BugCatcher {
      * @param bugTrigger
      */
     public static void activate(@NonNull BugTrigger bugTrigger) {
+        if (sConfig == null) {
+            Loger.e("Config is null , are you init ?");
+        }
+        if (sConfig.isDebug()) {
+            return;
+        }
+
         getService();
 
         String info = bugTrigger.getListener().onActivated();
-        service.upload(bugTrigger.setUpBug(info)).enqueue(new Callback<ResponseBody>() {
+        sService.upload(bugTrigger.setUpBug(info)).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                if(response.code() == 200){
+                if (response.code() == 200) {
                     Loger.e("成功");
                 }
             }

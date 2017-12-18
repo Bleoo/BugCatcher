@@ -12,13 +12,18 @@ allprojects {
 }
 
 dependencies {
-    compile 'com.github.Bleoo:BugCatcher:1.0.0'
+    compile 'com.github.Bleoo:BugCatcher:1.0.1'
 }
 ```
 
 
 ```java
-BugTrigger bugTrigger = new BugTrigger("103", new BugTrigger.onTriggerListener() {
+BugCatcher.init(new BugCatcher.Config()
+        .context(this)
+        .baseUrl("http://10.0.1.89:3000")
+        .debug(true));
+
+BugTrigger bugTrigger = new BugTrigger("#103", new BugTrigger.onTriggerListener() {
         @Override
         public String onActivated() {
             return "android 测试1";

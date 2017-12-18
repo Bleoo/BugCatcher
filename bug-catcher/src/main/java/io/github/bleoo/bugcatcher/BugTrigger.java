@@ -18,6 +18,7 @@ public class BugTrigger {
     public BugTrigger(String bugId, @NonNull onTriggerListener listener) {
         bug = new Bug();
         bug.id = bugId;
+        bug.device = Utils.getDeviceInfo();
         this.listener = listener;
     }
 
