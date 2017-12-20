@@ -1,5 +1,7 @@
 package io.github.bleoo.bugcatcher;
 
+import io.github.bleoo.bugcatcher.model.Bug;
+
 /**
  * Created by bleoo on 2017/12/12.
  */
@@ -16,7 +18,6 @@ public class BugTrigger {
     public BugTrigger(String bugId, onTriggerListener listener) {
         bug = new Bug();
         bug.id = bugId;
-        bug.device = Utils.getDeviceInfo();
         this.listener = listener;
     }
 

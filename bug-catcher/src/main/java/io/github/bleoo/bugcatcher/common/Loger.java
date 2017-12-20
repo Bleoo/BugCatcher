@@ -1,4 +1,4 @@
-package io.github.bleoo.bugcatcher;
+package io.github.bleoo.bugcatcher.common;
 
 import android.util.Log;
 

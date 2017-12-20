@@ -1,4 +1,4 @@
-package io.github.bleoo.bugcatcher;
+package io.github.bleoo.bugcatcher.model;
 
 /**
  * Created by bleoo on 2017/12/15.

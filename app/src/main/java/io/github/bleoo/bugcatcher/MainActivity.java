@@ -2,6 +2,8 @@ package io.github.bleoo.bugcatcher;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.widget.EditText;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -10,13 +12,20 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        BugTrigger bugTrigger = new BugTrigger("103", new BugTrigger.onTriggerListener() {
+        final EditText et_info = findViewById(R.id.et_info);
+
+        final BugTrigger bugTrigger = new BugTrigger("103", new BugTrigger.onTriggerListener() {
             @Override
             public String onActivated() {
-                return "android 测试1";
+                return et_info.getText().toString();
             }
         });
 
-        BugCatcher.activate(bugTrigger);
+        findViewById(R.id.btn_upload).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                BugCatcher.activate(bugTrigger);
+            }
+        });
     }
 }

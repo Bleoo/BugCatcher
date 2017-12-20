@@ -3,6 +3,13 @@ package io.github.bleoo.bugcatcher;
 import android.content.Context;
 import android.text.TextUtils;
 
+import java.util.List;
+
+import io.github.bleoo.bugcatcher.common.Loger;
+import io.github.bleoo.bugcatcher.common.ThreadUtil;
+import io.github.bleoo.bugcatcher.common.Utils;
+import io.github.bleoo.bugcatcher.db.DBHelper;
+import io.github.bleoo.bugcatcher.model.Bug;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -22,19 +29,18 @@ public class BugCatcher {
 
     public static void init(Config config) {
         sConfig = config;
-        Utils.init(sConfig.context);
-        Utils.getDeviceInfo();
+        if (!checkConfig()) return;
+        ThreadUtil.init();
+        Utils.init(sConfig.getContext());
+        DBHelper.init(sConfig.getContext());
+
+        uploadLastData();
     }
 
     private static void getService() {
-        if (TextUtils.isEmpty(sConfig.getBaseUrl())) {
-            Loger.e("BaseUrl of Config is null!");
-            return;
-        }
-
         if (sRetrofit == null) {
             sRetrofit = new Retrofit.Builder()
-                    .baseUrl(sConfig.basUrl)
+                    .baseUrl(sConfig.getBaseUrl())
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
         }
@@ -47,7 +53,7 @@ public class BugCatcher {
     public static class Config {
 
         private Context context;
-        private String basUrl;
+        private String baseUrl;
         private boolean debug;
 
         public Config context(Context context) {
@@ -56,7 +62,7 @@ public class BugCatcher {
         }
 
         public Config baseUrl(String url) {
-            basUrl = url;
+            baseUrl = url;
             return this;
         }
 
@@ -70,12 +76,71 @@ public class BugCatcher {
         }
 
         public String getBaseUrl() {
-            return basUrl;
+            return baseUrl;
         }
 
         public boolean isDebug() {
             return debug;
         }
+    }
+
+    private static boolean checkConfig() {
+        if (sConfig == null) {
+            Loger.e("Config is null , are you init ?");
+            return false;
+        }
+        if (!sConfig.isDebug()) {
+            return false;
+        }
+        if (TextUtils.isEmpty(sConfig.getBaseUrl())) {
+            Loger.e("BaseUrl of Config is null!");
+            return false;
+        }
+        if (sConfig.getContext() == null) {
+            Loger.e("Context of Config is null!");
+            return false;
+        }
+        return true;
+    }
+
+    private static void uploadLastData() {
+        ThreadUtil.run(new Runnable() {
+            @Override
+            public void run() {
+                final List<Bug> bugList = DBHelper.getBugs();
+                if (bugList == null || bugList.isEmpty()) {
+                    return;
+                }
+
+                ThreadUtil.runOnMain(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (final Bug bug : bugList) {
+                            bug.device = Utils.getDeviceInfo();
+
+                            upload(bug, new OnUploadCallback() {
+                                @Override
+                                public void onSuccess(final Bug bug) {
+                                    ThreadUtil.run(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            DBHelper.deleteBug(bug);
+                                        }
+                                    });
+                                }
+
+                                @Override
+                                public void onFail(final Bug bug) {
+
+                                }
+                            });
+
+                        }
+                    }
+                });
+
+            }
+        });
     }
 
     /**
@@ -84,24 +149,46 @@ public class BugCatcher {
      * @param bugTrigger
      */
     public static void activate(BugTrigger bugTrigger) {
+        if (!checkConfig()) return;
         if (bugTrigger == null) {
             return;
         }
-        if (sConfig == null) {
-            Loger.e("Config is null , are you init ?");
-        }
-        if (!sConfig.isDebug()) {
-            return;
-        }
-
-        getService();
 
         String info = bugTrigger.getListener().onActivated();
-        sService.upload(bugTrigger.setUpBug(info)).enqueue(new Callback<ResponseBody>() {
+        Bug bug = bugTrigger.setUpBug(info);
+        bug.device = Utils.getDeviceInfo();
+        upload(bug, new OnUploadCallback() {
+            @Override
+            public void onSuccess(Bug bug) {
+
+            }
+
+            @Override
+            public void onFail(final Bug bug) {
+                ThreadUtil.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        DBHelper.insertBug(bug);
+                    }
+                });
+            }
+        });
+    }
+
+    private static void upload(final Bug bug, final OnUploadCallback callback) {
+        getService();
+        sService.upload(bug).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.code() == 200) {
                     Loger.e("成功");
+                    if (callback != null) {
+                        callback.onSuccess(bug);
+                    }
+                    return;
+                }
+                if (callback != null) {
+                    callback.onFail(bug);
                 }
             }
 
@@ -109,7 +196,16 @@ public class BugCatcher {
             public void onFailure(Call<ResponseBody> call, Throwable t) {
                 Loger.e("失败");
                 Loger.e(t.getMessage());
+                if (callback != null) {
+                    callback.onFail(bug);
+                }
             }
         });
+    }
+
+    private interface OnUploadCallback {
+        void onSuccess(Bug bug);
+
+        void onFail(Bug bug);
     }
 }
